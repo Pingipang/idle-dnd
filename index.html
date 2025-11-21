@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Dungeon RPG</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="src/assets/css/style.css" />    
+</head>
+<body class="p-4">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold text-center text-yellow-400 mb-6">🗡️ Idle Dungeon RPG</h1>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Dungeon Panel -->
+            <div class="lg:col-span-2">
+                <div class="bg-slate-800 p-4 rounded-lg">
+                    <div id="dungeon" class="inline-grid gap-1 mb-4"></div>
+                </div>
+                
+                <!-- Control Panel -->
+                <div class="bg-slate-800 p-4 rounded-lg mt-4">
+                    <h3 class="text-lg font-bold text-blue-400 mb-3">🎮 Irányítás</h3>
+                    <div class="flex gap-4 items-center flex-wrap">
+                        <div class="grid grid-cols-3 gap-1">
+                            <div></div>
+                            <button id="btnUp" class="control-btn">↑</button>
+                            <div></div>
+                            <button id="btnLeft" class="control-btn">←</button>
+                            <button id="btnStay" class="control-btn">●</button>
+                            <button id="btnRight" class="control-btn">→</button>
+                            <div></div>
+                            <button id="btnDown" class="control-btn">↓</button>
+                            <div></div>
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <button id="btnToggleAuto" class="action-btn">
+                                <span id="autoText">⏸️ Auto: BE</span>
+                            </button>
+                            <button id="btnSearch" class="action-btn">
+                                🔍 Keresés
+                            </button>
+                        </div>
+                        
+                        <div class="flex flex-col gap-2">
+                            <button id="btnReset" class="action-btn danger">
+                                🔄 Újrakezdés
+                            </button>
+                            <button id="btnTeleport" class="action-btn">
+                                ⚡ Teleport
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Info Panel -->
+            <div class="space-y-4">
+                <!-- Player Stats -->
+                <div class="bg-slate-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold text-purple-400 mb-3">👤 Játékos</h3>
+
+                    <p class="text-sm mb-2">
+                        <strong class="text-blue-300">Név:</strong>
+                        <span id="playerName">Borzbarát Bárd Béla</span>
+                    </p>
+
+                    <!-- LEVEL & XP BAR -->
+                    <div class="mb-3">
+                        <p class="text-sm text-yellow-300 mb-1 font-bold">
+                            ⭐ Level: <span id="playerLevel">1</span>
+                        </p>
+                        <p class="text-xs text-gray-400 mb-1">
+                            XP: <span id="playerXPText">0 / 100</span>
+                        </p>
+                        <div class="w-full bg-slate-700 h-2 rounded">
+                            <div id="playerXPBar" class="bg-yellow-500 h-2 rounded transition-all" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <p class="text-sm mb-2">
+                        <strong class="text-blue-300">Pozíció:</strong>
+                        (<span id="playerX">0</span>, <span id="playerY">0</span>)
+                    </p>
+
+                    <!-- PLAYER HP BAR -->
+                    <div class="mt-3">
+                        <p class="text-sm text-red-300 mb-1 font-bold">
+                            ❤️ HP: <span id="playerHPText">20 / 20</span>
+                        </p>
+                        <div class="w-full bg-slate-700 h-3 rounded">
+                            <div id="playerHPBar" class="bg-green-500 h-3 rounded transition-all" style="width: 100%;"></div>
+                        </div>
+                    </div>
+
+                    <!-- PLAYER STATS -->
+                    <div class="mt-4 text-sm text-gray-300">
+                        <p><strong class="text-blue-300">DMG:</strong> <span id="playerDMG">4</span></p>
+                        <p><strong class="text-blue-300">Defense:</strong> <span id="playerDEF">1</span></p>
+                        <p><strong class="text-blue-300">Szerencse:</strong> <span id="playerLuck">1</span></p>
+                    </div>
+                </div>
+
+                <!-- Stat Points Panel -->
+                <div id="statButtons" class="bg-slate-800 p-4 rounded-lg hidden">
+                    <h3 class="text-lg font-bold text-green-400 mb-3">
+                        📊 Stat Pontok: <span id="statPoints" class="text-yellow-400">0</span>
+                    </h3>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button id="btnStatHP" class="stat-btn">
+                            ❤️ +5 HP
+                        </button>
+                        <button id="btnStatDMG" class="stat-btn">
+                            ⚔️ +2 DMG
+                        </button>
+                        <button id="btnStatDEF" class="stat-btn">
+                            🛡️ +1 DEF
+                        </button>
+                        <button id="btnStatLuck" class="stat-btn">
+                            🍀 +1 Luck
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Skill Panel -->
+                <div id="skillPanel" class="bg-slate-800 p-4 rounded-lg hidden">
+                    <h3 class="text-lg font-bold text-purple-400 mb-3">
+                        ✨ Skill Pontok: <span id="skillPoints" class="text-yellow-400">0</span>
+                    </h3>
+                    <div id="learnableSkills" class="space-y-2">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+                
+                <!-- Event Panel -->
+                <div class="bg-slate-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Esemény</h3>
+                    <p id="eventText" class="text-sm text-yellow-200 italic">Kezdd el a kalandot!</p>
+                </div>
+                
+                <!-- Inventory Panel -->
+                <div class="bg-slate-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold text-green-400 mb-3">🎒 Inventory</h3>
+                    <div id="inventoryPanel" class="text-sm text-gray-300">
+                        <p class="text-gray-500">Üres</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Combat Popup -->
+    <div id="combatPopup" class="hidden fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+        <div class="bg-slate-900 p-6 rounded-xl shadow-xl w-[500px]">
+            <h2 class="text-xl font-bold text-center text-purple-300 mb-4">⚔️ Harc</h2>
+
+            <!-- PLAYER VS ENEMY PANEL -->
+            <div class="flex justify-between items-center mb-4">
+                <!-- PLAYER SIDE -->
+                <div class="w-1/2 text-left pr-4 border-r border-slate-700">
+                    <h3 class="text-lg font-bold text-blue-300 mb-1" id="combatPlayerName">Játékos</h3>
+                    <p class="text-sm text-red-300 mb-1">
+                        HP: <span id="combatPlayerHPText">20 / 20</span>
+                    </p>
+                    <div class="w-full bg-slate-700 h-2 rounded mb-2">
+                        <div id="combatPlayerHPBar" class="bg-green-500 h-2 rounded transition-all" style="width: 100%;"></div>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        DMG: <span id="combatPlayerDMG">4</span><br>
+                        DEF: <span id="combatPlayerDEF">1</span>
+                    </div>
+                </div>
+
+                <!-- ENEMY SIDE -->
+                <div class="w-1/2 text-right pl-4">
+                    <h3 class="text-lg font-bold text-red-300 mb-1" id="combatEnemyName">Ellenség</h3>
+                    <p class="text-sm text-red-300 mb-1">
+                        HP: <span id="combatEnemyHPText">10 / 10</span>
+                    </p>
+                    <div class="w-full bg-slate-700 h-2 rounded mb-2">
+                        <div id="combatEnemyHPBar" class="bg-red-500 h-2 rounded transition-all" style="width: 100%;"></div>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        DMG: <span id="combatEnemyDMG">3</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- COMBAT LOG -->
+            <p id="combatLog" class="text-center text-sm text-gray-300 italic mb-4">
+                Csata indul…
+            </p>
+
+            <!-- ACTION BUTTONS -->
+            <div class="grid grid-cols-3 gap-2 mb-4">
+                <button id="btnCombatAttack" class="action-btn bg-red-600 hover:bg-red-700">⚔️ Támadás</button>
+                <button id="btnCombatDefend" class="action-btn bg-blue-600 hover:bg-blue-700">🛡️ Védekezés</button>
+                <button id="btnCombatFlee" class="action-btn bg-yellow-600 hover:bg-yellow-700">🏃 Futás</button>
+            </div>
+
+            <!-- SKILLS SECTION -->
+            <div class="mb-4">
+                <h4 class="text-center text-purple-300 font-bold text-sm mb-2">✨ Skillek</h4>
+                <div id="combatSkills" class="flex flex-wrap gap-2 justify-center text-sm text-gray-200">
+                    <!-- Dynamically filled -->
+                </div>
+            </div>
+
+            <!-- USABLE ITEMS SECTION -->
+            <div>
+                <h4 class="text-center text-green-300 font-bold text-sm mb-2">🎒 Használható tárgyak</h4>
+                <div id="combatItems" class="flex flex-wrap gap-2 justify-center text-sm text-gray-200">
+                    <!-- Dynamically filled -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="src/game/main.js"></script>
+</body>
+</html>
