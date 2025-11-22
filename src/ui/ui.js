@@ -125,10 +125,111 @@ export function updateInventoryUI(inventory) {
   const items = inventory.getItems();
 
   panel.innerHTML = items.length
-    ? items.map((i) => `<p>• ${i.name}: ${i.quantity}</p>`).join("")
+    ? items.map((i) => {
+        if (i.isEquipment) {
+            return `<p style="color: ${i.rarityColor}">• ${i.name} [${i.rarity}]</p>`;
+        }
+        return `<p>• ${i.name}: ${i.quantity}</p>`;
+    }).join("")
     : '<p class="text-gray-500">Üres</p>';
 }
 
 export function setEventText(text) {
   document.getElementById("eventText").textContent = text;
+}
+
+// Quest UI
+export function updateQuestUI(questSystem, onAcceptQuest) {
+    const questPanel = document.getElementById("questPanel");
+    if (!questPanel) return;
+
+    const activeQuests = questSystem.getActiveQuests();
+    
+    if (activeQuests.length === 0) {
+        questPanel.innerHTML = '<p class="text-gray-500 text-xs">Nincs aktív quest</p>';
+        return;
+    }
+
+    questPanel.innerHTML = activeQuests.map(quest => {
+        const progressPercent = (quest.progress / quest.targetCount) * 100;
+        
+        return `
+            <div class="bg-slate-700 p-2 rounded mb-2">
+                <p class="font-bold text-sm text-yellow-300">${quest.title}</p>
+                <p class="text-xs text-gray-400 mb-1">${quest.description}</p>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 bg-slate-600 h-2 rounded">
+                        <div class="bg-yellow-500 h-2 rounded transition-all" style="width: ${progressPercent}%"></div>
+                    </div>
+                    <span class="text-xs text-gray-300">${quest.progress}/${quest.targetCount}</span>
+                </div>
+                ${quest.progress >= quest.targetCount ? '<p class="text-green-400 text-xs mt-1">✓ Kész!</p>' : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+// Equipment UI
+export function updateEquipmentUI(equipmentSystem, onEquip, onUnequip) {
+    const equipmentPanel = document.getElementById("equipmentPanel");
+    if (!equipmentPanel) return;
+
+    const equipped = equipmentSystem.getEquipped();
+    const stats = equipmentSystem.getTotalStats();
+
+    let html = '<div class="text-xs text-gray-400 mb-2">';
+    html += `Bonus: +${stats.dmg} DMG, +${stats.def} DEF, +${stats.luck} Luck`;
+    html += '</div>';
+
+    // Weapon slot
+    html += '<div class="mb-2">';
+    html += '<p class="text-xs font-bold text-gray-300">⚔️ Fegyver:</p>';
+    if (equipped.weapon) {
+        html += `<p class="text-xs" style="color: ${equipped.weapon.rarityColor}">${equipped.weapon.name} (+${equipped.weapon.statValue} DMG)</p>`;
+        html += `<button class="text-xs text-red-400 hover:text-red-300" onclick="window.unequipSlot('weapon')">Levesz</button>`;
+    } else {
+        html += '<p class="text-xs text-gray-500">Üres</p>';
+    }
+    html += '</div>';
+
+    // Armor slot
+    html += '<div class="mb-2">';
+    html += '<p class="text-xs font-bold text-gray-300">🛡️ Páncél:</p>';
+    if (equipped.armor) {
+        html += `<p class="text-xs" style="color: ${equipped.armor.rarityColor}">${equipped.armor.name} (+${equipped.armor.statValue} DEF)</p>`;
+        html += `<button class="text-xs text-red-400 hover:text-red-300" onclick="window.unequipSlot('armor')">Levesz</button>`;
+    } else {
+        html += '<p class="text-xs text-gray-500">Üres</p>';
+    }
+    html += '</div>';
+
+    // Accessory slot
+    html += '<div class="mb-2">';
+    html += '<p class="text-xs font-bold text-gray-300">💍 Kiegészítő:</p>';
+    if (equipped.accessory) {
+        html += `<p class="text-xs" style="color: ${equipped.accessory.rarityColor}">${equipped.accessory.name} (+${equipped.accessory.statValue} Luck)</p>`;
+        html += `<button class="text-xs text-red-400 hover:text-red-300" onclick="window.unequipSlot('accessory')">Levesz</button>`;
+    } else {
+        html += '<p class="text-xs text-gray-500">Üres</p>';
+    }
+    html += '</div>';
+
+    equipmentPanel.innerHTML = html;
+}
+
+// Biome info UI
+export function updateBiomeUI(biome) {
+    const biomePanel = document.getElementById("biomeInfo");
+    if (!biomePanel) return;
+
+    if (!biome) {
+        biomePanel.innerHTML = '<p class="text-gray-500 text-xs">Ismeretlen terület</p>';
+        return;
+    }
+
+    biomePanel.innerHTML = `
+        <p class="text-sm font-bold" style="color: ${biome.color}">
+            ${biome.emoji} ${biome.name}
+        </p>
+    `;
 }

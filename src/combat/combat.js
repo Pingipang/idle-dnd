@@ -19,7 +19,6 @@ export function createCombatSystem(player, inventory, levelSystem, skillSystem, 
         if (stunTurns > 0) {
             stunTurns--;
         }
-        // Skill cooldownok csökkentése
         skillSystem.tickCooldowns();
     }
 
@@ -29,9 +28,10 @@ export function createCombatSystem(player, inventory, levelSystem, skillSystem, 
         currentEnemy.hp -= player.dmg;
 
         if (currentEnemy.hp <= 0) {
-            const loot = Math.random() < currentEnemy.lootChance ? getLoot() : null;
+            const loot = Math.random() < currentEnemy.lootChance ? getLoot(levelSystem.level) : null;
             const xpGained = currentEnemy.xp || 0;
 
+            // XP++
             const leveledUp = levelSystem.addXP(xpGained);
 
             let message = `Legyőzted a(z) ${currentEnemy.name}-t! +${xpGained} XP`;
@@ -70,8 +70,10 @@ export function createCombatSystem(player, inventory, levelSystem, skillSystem, 
         skillSystem.triggerCooldown(skillId);
 
         if (currentEnemy.hp <= 0) {
-            const loot = Math.random() < currentEnemy.lootChance ? getLoot() : null;
+            const loot = Math.random() < currentEnemy.lootChance ? getLoot(levelSystem.level) : null;
             const xpGained = currentEnemy.xp || 0;
+            
+            // XP++
             const leveledUp = levelSystem.addXP(xpGained);
 
             let msg = `Legyőzted a(z) ${currentEnemy.name}-t! +${xpGained} XP`;
@@ -136,8 +138,10 @@ export function createCombatSystem(player, inventory, levelSystem, skillSystem, 
         }
 
         // Quick Reflex passive skill check
-        const quickReflexSkill = skillSystem.getActiveSkills().find(s => s.id === "quick_reflex");
-        if (quickReflexSkill && Math.random() < quickReflexSkill.dodgeChance) {
+        const passiveSkills = skillSystem.getPassiveSkills ? skillSystem.getPassiveSkills() : [];
+        const quickReflexSkill = passiveSkills.find(s => s.id === "quick_reflex");
+        
+        if (quickReflexSkill && quickReflexSkill.dodgeChance && Math.random() < quickReflexSkill.dodgeChance) {
             updatePopupUI(`Elkerülted a támadást! (Quick Reflex)`, currentEnemy);
             return;
         }

@@ -6,10 +6,8 @@ export function createInventory() {
       const current = items.get(name);
       
       if (current) {
-        // Ha már létezik, csak a mennyiséget növeljük
         current.quantity += quantity;
       } else {
-        // Ha új item, létrehozzuk a teljes objektumot
         items.set(name, { 
           quantity, 
           type, 

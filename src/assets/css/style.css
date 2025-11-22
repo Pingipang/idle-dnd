@@ -12,12 +12,25 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 20px;
-    transition: all 0.2s;
+    transition: all 0.3s;
+    position: relative;
+}
+
+.cell::before {
+    content: attr(data-biome-emoji);
+    position: absolute;
+    font-size: 12px;
+    opacity: 0.3;
 }
 
 .cell.player {
     background: #fbbf24;
-    box-shadow: 0 0 15px #fbbf24;
+    box-shadow: 0 0 20px #fbbf24;
+    transform: scale(1.1);
+}
+
+.cell.player::before {
+    display: none;
 }
 
 .control-btn {
@@ -130,4 +143,58 @@ body {
 .combat-skill-btn:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+/* Quest Progress Bar */
+.quest-progress {
+    height: 8px;
+    background: #334155;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.quest-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #eab308, #f59e0b);
+    transition: width 0.3s ease;
+}
+
+/* Equipment Rarity Colors */
+.equipment-common { color: #9ca3af; }
+.equipment-uncommon { color: #22c55e; }
+.equipment-rare { color: #3b82f6; }
+.equipment-epic { color: #a855f7; }
+.equipment-legendary { color: #f97316; }
+
+/* Biome indicator pulse */
+@keyframes biome-pulse {
+    0%, 100% { opacity: 0.3; }
+    50% { opacity: 0.6; }
+}
+
+.cell[data-biome-emoji]::before {
+    animation: biome-pulse 3s infinite;
+}
+
+/* Equipment slot highlight */
+.equipment-slot:hover {
+    background: #334155;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+
+#playerDMG, #playerDEF, #playerLuck, #playerHPText {
+    transition: all 0.3s ease;
+}
+
+/* Quest completed animation */
+@keyframes quest-complete {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+.quest-complete {
+    animation: quest-complete 0.5s ease;
 }

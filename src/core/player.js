@@ -2,8 +2,15 @@ export function createPlayer(startX, startY) {
     return {
         x: startX,
         y: startY,
+        name: "Borzbarát Bárd Béla",
 
-        // PLAYER STATS
+        // BASE STATS (without equipment)
+        baseMaxHP: 20,
+        baseDmg: 4,
+        baseDef: 1,
+        baseLuck: 1,
+        
+        // CURRENT STATS (base + equipment)
         maxHP: 20,
         hp: 20,
         dmg: 4,
@@ -42,6 +49,21 @@ export function createPlayer(startX, startY) {
             this.x = x;
             this.y = y;
             this.hp = this.maxHP;
+        },
+        
+        // Update stats with equipment bonuses
+        updateStats(equipmentStats) {
+            this.dmg = this.baseDmg + equipmentStats.dmg;
+            this.def = this.baseDef + equipmentStats.def;
+            this.luck = this.baseLuck + equipmentStats.luck;
+            
+            const hpRatio = this.maxHP > 0 ? (this.hp / this.maxHP) : 1;
+            this.maxHP = this.baseMaxHP; 
+            this.hp = Math.floor(this.maxHP * hpRatio);
+
+            if (this.hp > this.maxHP) {
+                this.hp = this.maxHP;
+            }
         }
     };
 }

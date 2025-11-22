@@ -8,12 +8,17 @@
     <link rel="stylesheet" href="src/assets/css/style.css" />    
 </head>
 <body class="p-4">
-    <div class="max-w-6xl mx-auto">
+    <div class="max-w-7xl mx-auto">
         <h1 class="text-3xl font-bold text-center text-yellow-400 mb-6">🗡️ Idle Dungeon RPG</h1>
         
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <!-- Dungeon Panel -->
             <div class="lg:col-span-2">
+                <!-- Biome Info -->
+                <div class="bg-slate-800 p-2 rounded-lg mb-2">
+                    <div id="biomeInfo"></div>
+                </div>
+                
                 <div class="bg-slate-800 p-4 rounded-lg">
                     <div id="dungeon" class="inline-grid gap-1 mb-4"></div>
                 </div>
@@ -55,7 +60,7 @@
                 </div>
             </div>
             
-            <!-- Info Panel -->
+            <!-- Left Info Panel -->
             <div class="space-y-4">
                 <!-- Player Stats -->
                 <div class="bg-slate-800 p-4 rounded-lg">
@@ -133,10 +138,29 @@
                     </div>
                 </div>
                 
+                <!-- Equipment Panel -->
+                <div class="bg-slate-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold text-orange-400 mb-3">⚔️ Felszerelés</h3>
+                    <div id="equipmentPanel" class="text-sm text-gray-300">
+                        <p class="text-gray-500 text-xs">Nincs felszerelés</p>
+                    </div>
+                </div>
+                
                 <!-- Event Panel -->
                 <div class="bg-slate-800 p-4 rounded-lg">
                     <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Esemény</h3>
                     <p id="eventText" class="text-sm text-yellow-200 italic">Kezdd el a kalandot!</p>
+                </div>
+            </div>
+            
+            <!-- Right Info Panel -->
+            <div class="space-y-4">
+                <!-- Quest Panel -->
+                <div class="bg-slate-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Küldetések</h3>
+                    <div id="questPanel" class="text-sm">
+                        <p class="text-gray-500 text-xs">Nincs aktív quest</p>
+                    </div>
                 </div>
                 
                 <!-- Inventory Panel -->

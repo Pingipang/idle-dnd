@@ -4,7 +4,6 @@ export function createLevelSystem() {
     let statPoints = 0;
     let skillPoints = 0;
 
-    // XP szükséglet level-enként (exponenciális növekedés)
     function getXPForNextLevel(currentLevel) {
         return Math.floor(100 * Math.pow(1.5, currentLevel - 1));
     }
@@ -18,17 +17,16 @@ export function createLevelSystem() {
         if (xp >= xpNeeded) {
             xp -= xpNeeded;
             level++;
-            statPoints += 3; // 3 stat pont levelenként
+            statPoints += 3; 
             
-            // Skill pont minden 2. levelenként
             if (level % 2 === 0) {
                 skillPoints++;
             }
             
-            return true; // Level up történt
+            return true; 
         }
         
-        return false; // Nincs level up
+        return false; 
     }
 
     function spendStatPoint(stat, player) {
@@ -36,17 +34,21 @@ export function createLevelSystem() {
 
         switch(stat) {
             case "hp":
+                player.baseMaxHP += 5;
                 player.maxHP += 5;
-                player.hp += 5;
+                player.hp += 5; 
                 break;
             case "dmg":
-                player.dmg += 2;
+                player.baseDmg += 2;
+                player.dmg += 2; 
                 break;
             case "def":
-                player.def += 1;
+                player.baseDef += 1;
+                player.def += 1; 
                 break;
             case "luck":
-                player.luck += 1;
+                player.baseLuck += 1;
+                player.luck += 1; 
                 break;
             default:
                 return false;
