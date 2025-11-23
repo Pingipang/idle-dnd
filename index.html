@@ -11,163 +11,229 @@
     <div class="max-w-7xl mx-auto">
         <h1 class="text-3xl font-bold text-center text-yellow-400 mb-6">🗡️ Idle Dungeon RPG</h1>
         
-        <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <!-- Dungeon Panel -->
-            <div class="lg:col-span-2">
-                <!-- Biome Info -->
-                <div class="bg-slate-800 p-2 rounded-lg mb-2">
-                    <div id="biomeInfo"></div>
-                </div>
+        <!-- WORLD MAP VIEW -->
+        <div id="worldMapView" class="">
+            <div class="bg-slate-800 p-6 rounded-lg mb-4">
+                <h2 class="text-2xl font-bold text-center text-purple-400 mb-4">🗺️ World Map</h2>
+                <p class="text-center text-gray-400 mb-6">Válassz egy területet a felfedezéshez!</p>
                 
-                <div class="bg-slate-800 p-4 rounded-lg">
-                    <div id="dungeon" class="inline-grid gap-1 mb-4"></div>
-                </div>
-                
-                <!-- Control Panel -->
-                <div class="bg-slate-800 p-4 rounded-lg mt-4">
-                    <h3 class="text-lg font-bold text-blue-400 mb-3">🎮 Irányítás</h3>
-                    <div class="flex gap-4 items-center flex-wrap">
-                        <div class="grid grid-cols-3 gap-1">
-                            <div></div>
-                            <button id="btnUp" class="control-btn">↑</button>
-                            <div></div>
-                            <button id="btnLeft" class="control-btn">←</button>
-                            <button id="btnStay" class="control-btn">●</button>
-                            <button id="btnRight" class="control-btn">→</button>
-                            <div></div>
-                            <button id="btnDown" class="control-btn">↓</button>
-                            <div></div>
-                        </div>
-                        
-                        <div class="flex flex-col gap-2">
-                            <button id="btnToggleAuto" class="action-btn">
-                                <span id="autoText">⏸️ Auto: BE</span>
-                            </button>
-                            <button id="btnSearch" class="action-btn">
-                                🔍 Keresés
-                            </button>
-                        </div>
-                        
-                        <div class="flex flex-col gap-2">
-                            <button id="btnReset" class="action-btn danger">
-                                🔄 Újrakezdés
-                            </button>
-                            <button id="btnTeleport" class="action-btn">
-                                ⚡ Teleport
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <div id="worldMapGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Dynamically filled by JS -->
+</div>
             </div>
             
-            <!-- Left Info Panel -->
-            <div class="space-y-4">
-                <!-- Player Stats -->
+            <!-- Player Info in World Map -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div class="bg-slate-800 p-4 rounded-lg">
                     <h3 class="text-lg font-bold text-purple-400 mb-3">👤 Játékos</h3>
-
                     <p class="text-sm mb-2">
-                        <strong class="text-blue-300">Név:</strong>
-                        <span id="playerName">Borzbarát Bárd Béla</span>
+                        <strong class="text-blue-300">Level:</strong>
+                        <span id="worldMapPlayerLevel">1</span>
                     </p>
-
-                    <!-- LEVEL & XP BAR -->
-                    <div class="mb-3">
-                        <p class="text-sm text-yellow-300 mb-1 font-bold">
-                            ⭐ Level: <span id="playerLevel">1</span>
-                        </p>
-                        <p class="text-xs text-gray-400 mb-1">
-                            XP: <span id="playerXPText">0 / 100</span>
-                        </p>
-                        <div class="w-full bg-slate-700 h-2 rounded">
-                            <div id="playerXPBar" class="bg-yellow-500 h-2 rounded transition-all" style="width: 0%;"></div>
-                        </div>
-                    </div>
-
                     <p class="text-sm mb-2">
-                        <strong class="text-blue-300">Pozíció:</strong>
-                        (<span id="playerX">0</span>, <span id="playerY">0</span>)
+                        <strong class="text-blue-300">HP:</strong>
+                        <span id="worldMapPlayerHP">20 / 20</span>
                     </p>
-
-                    <!-- PLAYER HP BAR -->
-                    <div class="mt-3">
-                        <p class="text-sm text-red-300 mb-1 font-bold">
-                            ❤️ HP: <span id="playerHPText">20 / 20</span>
-                        </p>
-                        <div class="w-full bg-slate-700 h-3 rounded">
-                            <div id="playerHPBar" class="bg-green-500 h-3 rounded transition-all" style="width: 100%;"></div>
-                        </div>
-                    </div>
-
-                    <!-- PLAYER STATS -->
-                    <div class="mt-4 text-sm text-gray-300">
-                        <p><strong class="text-blue-300">DMG:</strong> <span id="playerDMG">4</span></p>
-                        <p><strong class="text-blue-300">Defense:</strong> <span id="playerDEF">1</span></p>
-                        <p><strong class="text-blue-300">Szerencse:</strong> <span id="playerLuck">1</span></p>
-                    </div>
-                </div>
-
-                <!-- Stat Points Panel -->
-                <div id="statButtons" class="bg-slate-800 p-4 rounded-lg hidden">
-                    <h3 class="text-lg font-bold text-green-400 mb-3">
-                        📊 Stat Pontok: <span id="statPoints" class="text-yellow-400">0</span>
-                    </h3>
-                    <div class="grid grid-cols-2 gap-2">
-                        <button id="btnStatHP" class="stat-btn">
-                            ❤️ +5 HP
-                        </button>
-                        <button id="btnStatDMG" class="stat-btn">
-                            ⚔️ +2 DMG
-                        </button>
-                        <button id="btnStatDEF" class="stat-btn">
-                            🛡️ +1 DEF
-                        </button>
-                        <button id="btnStatLuck" class="stat-btn">
-                            🍀 +1 Luck
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Skill Panel -->
-                <div id="skillPanel" class="bg-slate-800 p-4 rounded-lg hidden">
-                    <h3 class="text-lg font-bold text-purple-400 mb-3">
-                        ✨ Skill Pontok: <span id="skillPoints" class="text-yellow-400">0</span>
-                    </h3>
-                    <div id="learnableSkills" class="space-y-2">
-                        <!-- Dynamically filled -->
-                    </div>
+                    <p class="text-sm mb-2">
+                        <strong class="text-blue-300">DMG:</strong>
+                        <span id="worldMapPlayerDMG">4</span>
+                    </p>
                 </div>
                 
-                <!-- Equipment Panel -->
-                <div class="bg-slate-800 p-4 rounded-lg">
-                    <h3 class="text-lg font-bold text-orange-400 mb-3">⚔️ Felszerelés</h3>
-                    <div id="equipmentPanel" class="text-sm text-gray-300">
-                        <p class="text-gray-500 text-xs">Nincs felszerelés</p>
-                    </div>
-                </div>
-                
-                <!-- Event Panel -->
-                <div class="bg-slate-800 p-4 rounded-lg">
-                    <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Esemény</h3>
-                    <p id="eventText" class="text-sm text-yellow-200 italic">Kezdd el a kalandot!</p>
-                </div>
-            </div>
-            
-            <!-- Right Info Panel -->
-            <div class="space-y-4">
-                <!-- Quest Panel -->
-                <div class="bg-slate-800 p-4 rounded-lg">
-                    <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Küldetések</h3>
-                    <div id="questPanel" class="text-sm">
+                <div class="lg:col-span-2 bg-slate-800 p-4 rounded-lg">
+                    <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Aktív Küldetések</h3>
+                    <div id="worldMapQuests">
                         <p class="text-gray-500 text-xs">Nincs aktív quest</p>
                     </div>
                 </div>
+            </div>
+        </div>
+        
+        <!-- REGION VIEW (NEW!) -->
+        <div id="regionView" class="hidden">
+            <div class="bg-slate-800 p-6 rounded-lg mb-4">
+                <!-- Region Info Header -->
+                <div id="regionViewHeader" class="mb-4">
+                    <!-- Filled by JS -->
+                </div>
                 
-                <!-- Inventory Panel -->
-                <div class="bg-slate-800 p-4 rounded-lg">
-                    <h3 class="text-lg font-bold text-green-400 mb-3">🎒 Inventory</h3>
-                    <div id="inventoryPanel" class="text-sm text-gray-300">
-                        <p class="text-gray-500">Üres</p>
+                <h2 class="text-2xl font-bold text-center text-blue-400 mb-4">🏰 Dungeons</h2>
+                <p class="text-center text-gray-400 mb-6">Válassz egy dungeon-t!</p>
+                
+                <div id="regionDungeonList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Dynamically filled by JS -->
+                </div>
+                
+                <div class="text-center mt-6">
+                    <button id="btnBackToWorldMap" class="action-btn">
+                        🗺️ Back to World Map
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- DUNGEON VIEW -->
+        <div id="dungeonView" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <!-- Dungeon Panel -->
+                <div class="lg:col-span-2">
+                    <!-- Current Dungeon Info -->
+                    <div class="bg-slate-800 p-3 rounded-lg mb-2">
+                        <div id="currentDungeonInfo">
+                            <!-- Filled by JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <div id="dungeon" class="inline-grid gap-1 mb-4"></div>
+                    </div>
+                    
+                    <!-- Control Panel -->
+                    <div class="bg-slate-800 p-4 rounded-lg mt-4">
+                        <h3 class="text-lg font-bold text-blue-400 mb-3">🎮 Irányítás</h3>
+                        <div class="flex gap-4 items-center flex-wrap">
+                            <div class="grid grid-cols-3 gap-1">
+                                <div></div>
+                                <button id="btnUp" class="control-btn">↑</button>
+                                <div></div>
+                                <button id="btnLeft" class="control-btn">←</button>
+                                <button id="btnStay" class="control-btn">●</button>
+                                <button id="btnRight" class="control-btn">→</button>
+                                <div></div>
+                                <button id="btnDown" class="control-btn">↓</button>
+                                <div></div>
+                            </div>
+                            
+                            <div class="flex flex-col gap-2">
+                                <button id="btnToggleAuto" class="action-btn">
+                                    <span id="autoText">⏸️ Auto: BE</span>
+                                </button>
+                                <button id="btnSearch" class="action-btn">
+                                    🔍 Keresés
+                                </button>
+                            </div>
+                            
+                            <div class="flex flex-col gap-2">
+                                <button id="btnReset" class="action-btn danger">
+                                    🔄 Újrakezdés
+                                </button>
+                                <button id="btnTeleport" class="action-btn">
+                                    ⚡ Teleport
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Left Info Panel -->
+                <div class="space-y-4">
+                    <!-- Player Stats -->
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <h3 class="text-lg font-bold text-purple-400 mb-3">👤 Játékos</h3>
+
+                        <p class="text-sm mb-2">
+                            <strong class="text-blue-300">Név:</strong>
+                            <span id="playerName">Borzbarát Bárd Béla</span>
+                        </p>
+
+                        <!-- LEVEL & XP BAR -->
+                        <div class="mb-3">
+                            <p class="text-sm text-yellow-300 mb-1 font-bold">
+                                ⭐ Level: <span id="playerLevel">1</span>
+                            </p>
+                            <p class="text-xs text-gray-400 mb-1">
+                                XP: <span id="playerXPText">0 / 100</span>
+                            </p>
+                            <div class="w-full bg-slate-700 h-2 rounded">
+                                <div id="playerXPBar" class="bg-yellow-500 h-2 rounded transition-all" style="width: 0%;"></div>
+                            </div>
+                        </div>
+
+                        <p class="text-sm mb-2">
+                            <strong class="text-blue-300">Pozíció:</strong>
+                            (<span id="playerX">0</span>, <span id="playerY">0</span>)
+                        </p>
+
+                        <!-- PLAYER HP BAR -->
+                        <div class="mt-3">
+                            <p class="text-sm text-red-300 mb-1 font-bold">
+                                ❤️ HP: <span id="playerHPText">20 / 20</span>
+                            </p>
+                            <div class="w-full bg-slate-700 h-3 rounded">
+                                <div id="playerHPBar" class="bg-green-500 h-3 rounded transition-all" style="width: 100%;"></div>
+                            </div>
+                        </div>
+
+                        <!-- PLAYER STATS -->
+                        <div class="mt-4 text-sm text-gray-300">
+                            <p><strong class="text-blue-300">DMG:</strong> <span id="playerDMG">4</span></p>
+                            <p><strong class="text-blue-300">Defense:</strong> <span id="playerDEF">1</span></p>
+                            <p><strong class="text-blue-300">Szerencse:</strong> <span id="playerLuck">1</span></p>
+                        </div>
+                    </div>
+
+                    <!-- Stat Points Panel -->
+                    <div id="statButtons" class="bg-slate-800 p-4 rounded-lg hidden">
+                        <h3 class="text-lg font-bold text-green-400 mb-3">
+                            📊 Stat Pontok: <span id="statPoints" class="text-yellow-400">0</span>
+                        </h3>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button id="btnStatHP" class="stat-btn">
+                                ❤️ +5 HP
+                            </button>
+                            <button id="btnStatDMG" class="stat-btn">
+                                ⚔️ +2 DMG
+                            </button>
+                            <button id="btnStatDEF" class="stat-btn">
+                                🛡️ +1 DEF
+                            </button>
+                            <button id="btnStatLuck" class="stat-btn">
+                                🍀 +1 Luck
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Skill Panel -->
+                    <div id="skillPanel" class="bg-slate-800 p-4 rounded-lg hidden">
+                        <h3 class="text-lg font-bold text-purple-400 mb-3">
+                            ✨ Skill Pontok: <span id="skillPoints" class="text-yellow-400">0</span>
+                        </h3>
+                        <div id="learnableSkills" class="space-y-2">
+                            <!-- Dynamically filled -->
+                        </div>
+                    </div>
+                    
+                    <!-- Equipment Panel -->
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <h3 class="text-lg font-bold text-orange-400 mb-3">⚔️ Felszerelés</h3>
+                        <div id="equipmentPanel" class="text-sm text-gray-300">
+                            <p class="text-gray-500 text-xs">Nincs felszerelés</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Event Panel -->
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Esemény</h3>
+                        <p id="eventText" class="text-sm text-yellow-200 italic">Kezdd el a kalandot!</p>
+                    </div>
+                </div>
+                
+                <!-- Right Info Panel -->
+                <div class="space-y-4">
+                    <!-- Quest Panel -->
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <h3 class="text-lg font-bold text-yellow-400 mb-3">📜 Küldetések</h3>
+                        <div id="questPanel" class="text-sm">
+                            <p class="text-gray-500 text-xs">Nincs aktív quest</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Inventory Panel -->
+                    <div class="bg-slate-800 p-4 rounded-lg">
+                        <h3 class="text-lg font-bold text-green-400 mb-3">🎒 Inventory</h3>
+                        <div id="inventoryPanel" class="text-sm text-gray-300">
+                            <p class="text-gray-500">Üres</p>
+                        </div>
                     </div>
                 </div>
             </div>
