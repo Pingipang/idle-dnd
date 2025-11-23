@@ -1,5 +1,6 @@
-export const bosses = [
-    {
+// Boss definitions matched to regions
+export const bosses = {
+    "Karen, Manager Hívó": {
         name: "Karen, Manager Hívó",
         hp: 100,
         dmg: 8,
@@ -8,174 +9,111 @@ export const bosses = [
         level: 5,
         description: "I WANT TO SPEAK TO THE DUNGEON MANAGER!",
         emoji: "👩‍💼",
-        lootChance: 1.0, 
-        abilities: [
-            {
-                name: "Manager召喚",
-                chance: 0.3,
-                effect: "Karen hív egy managert! +5 HP neki.",
-                action: (boss) => {
-                    boss.hp = Math.min(boss.maxHP, boss.hp + 5);
-                    return "Karen managert hívott! +5 HP!";
-                }
-            },
-            {
-                name: "Complaint Blast",
-                chance: 0.2,
-                effect: "Panaszáradat! 2x DMG!",
-                action: (boss, player) => {
-                    const dmg = boss.dmg * 2;
-                    player.hp -= dmg;
-                    return `Karen panaszkodik! ${dmg} sebzés!`;
-                }
-            }
-        ]
+        lootChance: 1.0,
+        region: "corporate"
     },
     
-    {
-        name: "Chad Thunderfist",
-        hp: 120,
+    "The Founder": {
+        name: "The Founder",
+        hp: 150,
         dmg: 10,
         def: 3,
         xp: 600,
         level: 10,
+        description: "We're changing the world... with coffee!",
+        emoji: "☕",
+        lootChance: 1.0,
+        region: "startup"
+    },
+    
+    "Chad Thunderfist": {
+        name: "Chad Thunderfist",
+        hp: 200,
+        dmg: 12,
+        def: 4,
+        xp: 700,
+        level: 15,
         description: "Bro, do you even lift?",
         emoji: "💪",
         lootChance: 1.0,
-        abilities: [
-            {
-                name: "Protein Shake",
-                chance: 0.25,
-                effect: "Protein shake! +10 HP és +2 DMG!",
-                action: (boss) => {
-                    boss.hp = Math.min(boss.maxHP, boss.hp + 10);
-                    boss.dmg += 2;
-                    return "Chad proteint ivott! +10 HP, +2 DMG!";
-                }
-            },
-            {
-                name: "Gym Bro Slam",
-                chance: 0.3,
-                effect: "GYM SLAM! Ignore defense!",
-                action: (boss, player) => {
-                    const dmg = boss.dmg + 5;
-                    player.hp -= dmg;
-                    return `Chad GYM SLAM! ${dmg} sebzés (DEF ignored)!`;
-                }
-            }
-        ]
+        region: "gaming"
     },
     
-    {
-        name: "Tech Support Lich",
-        hp: 90,
-        dmg: 7,
-        def: 4,
-        xp: 550,
-        level: 8,
-        description: "Have you tried turning it off and on again?",
-        emoji: "🧙‍♂️",
-        lootChance: 1.0,
-        abilities: [
-            {
-                name: "System Reboot",
-                chance: 0.2,
-                effect: "Reboot! Visszaáll full HP-ra!",
-                action: (boss) => {
-                    boss.hp = boss.maxHP;
-                    return "Tech Support Lich rebootolt! Full HP!";
-                }
-            },
-            {
-                name: "Troubleshoot",
-                chance: 0.25,
-                effect: "Troubleshooting... Player debug mode!",
-                action: (boss, player) => {
-                    player.hp -= 5;
-                    return "Troubleshooting... -5 HP és confuse!";
-                }
-            }
-        ]
-    },
-    
-    {
+    "Influencer Dragon": {
         name: "Influencer Dragon",
-        hp: 150,
-        dmg: 12,
-        def: 2,
+        hp: 250,
+        dmg: 14,
+        def: 4,
         xp: 800,
-        level: 15,
+        level: 20,
         description: "#Blessed #NoFilter #DragonLife",
         emoji: "🐉",
         lootChance: 1.0,
-        abilities: [
-            {
-                name: "Selfie Attack",
-                chance: 0.3,
-                effect: "Selfie! Vakú! -10 accuracy!",
-                action: (boss, player) => {
-                    const dmg = Math.floor(boss.dmg * 0.5);
-                    player.hp -= dmg;
-                    return `Influencer Dragon szelfit készít! Vak vagy! ${dmg} sebzés!`;
-                }
-            },
-            {
-                name: "Viral Post",
-                chance: 0.2,
-                effect: "Viral lett! +20 HP a dragonnak!",
-                action: (boss) => {
-                    boss.hp = Math.min(boss.maxHP, boss.hp + 20);
-                    return "A poszta viral lett! +20 HP!";
-                }
-            }
-        ]
+        region: "social"
     },
     
-    {
-        name: "Algorithm Beast",
-        hp: 200,
-        dmg: 15,
+    "Ultimate Karen": {
+        name: "Ultimate Karen",
+        hp: 300,
+        dmg: 16,
         def: 5,
+        xp: 900,
+        level: 25,
+        description: "The FINAL Karen. Manager won't save you.",
+        emoji: "👹",
+        lootChance: 1.0,
+        region: "retail"
+    },
+    
+    "Tech Support Lich": {
+        name: "Tech Support Lich",
+        hp: 350,
+        dmg: 18,
+        def: 6,
         xp: 1000,
-        level: 20,
+        level: 30,
+        description: "Have you tried turning it off and on again?",
+        emoji: "🧙‍♂️",
+        lootChance: 1.0,
+        region: "techsupport"
+    },
+    
+    "Algorithm Beast": {
+        name: "Algorithm Beast",
+        hp: 400,
+        dmg: 20,
+        def: 7,
+        xp: 1200,
+        level: 35,
         description: "Your content has been demonetized.",
         emoji: "🤖",
         lootChance: 1.0,
-        abilities: [
-            {
-                name: "Shadowban",
-                chance: 0.25,
-                effect: "Shadowban! Kihagyod a következő turnod!",
-                action: (boss, player) => {
-                    player.hp -= 10;
-                    return "Az Algorithm shadowbannolt! -10 HP és skip turn!";
-                }
-            },
-            {
-                name: "Demonetization",
-                chance: 0.3,
-                effect: "Demonetized! Elveszítesz pénzt!",
-                action: (boss, player) => {
-                    // Remove gold
-                    player.hp -= boss.dmg;
-                    return `Demonetizálva lettél! ${boss.dmg} sebzés és gold loss!`;
-                }
-            }
-        ]
-    }
-];
-
-// Get boss by level threshold
-export function getBossByLevel(playerLevel) {
-    const availableBosses = bosses.filter(b => b.level <= playerLevel);
-    if (availableBosses.length === 0) return bosses[0]; // Return first boss
+        region: "crypto"
+    },
     
-    return availableBosses[Math.floor(Math.random() * availableBosses.length)];
+    "The CEO": {
+        name: "The CEO",
+        hp: 500,
+        dmg: 25,
+        def: 10,
+        xp: 2000,
+        level: 40,
+        description: "FINAL BOSS. Maximizing shareholder value... your HP.",
+        emoji: "👔",
+        lootChance: 1.0,
+        region: "ceotower"
+    }
+};
+
+// Get boss by name
+export function getBossByName(name) {
+    return bosses[name];
 }
 
-// Get random boss
-export function getRandomBoss() {
-    return bosses[Math.floor(Math.random() * bosses.length)];
+// Get boss for specific region
+export function getBossForRegion(regionId) {
+    const bossEntry = Object.values(bosses).find(b => b.region === regionId);
+    return bossEntry || bosses["Karen, Manager Hívó"]; // Fallback
 }
 
 // Create boss instance
@@ -183,7 +121,19 @@ export function spawnBoss(bossData) {
     return {
         ...bossData,
         maxHP: bossData.hp,
-        isBoss: true,
-        currentAbility: null
+        isBoss: true
     };
+}
+
+// Legacy function for compatibility
+export function getBossByLevel(playerLevel) {
+    const availableBosses = Object.values(bosses).filter(b => b.level <= playerLevel + 5);
+    if (availableBosses.length === 0) return bosses["Karen, Manager Hívó"];
+    
+    return availableBosses[availableBosses.length - 1];
+}
+
+export function getRandomBoss() {
+    const bossArray = Object.values(bosses);
+    return bossArray[Math.floor(Math.random() * bossArray.length)];
 }

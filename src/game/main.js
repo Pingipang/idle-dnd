@@ -1,18 +1,20 @@
-import { createDungeon } from "../core/dungeon.js"
+import { createDungeon } from "../core/dungeon-grid.js"
 import { createPlayer } from "../core/player.js";
-import { randomEvent } from "../core/events.js";
-import { updateUI, updateInventoryUI, setEventText, updateLevelUI, updateSkillUI, updateQuestUI, updateEquipmentUI, updateBiomeUI } from "../ui/ui.js";
+import { updateUI, updateInventoryUI, setEventText, updateLevelUI, updateSkillUI, updateQuestUI, updateEquipmentUI, updateWorldMapUI, updateRegionDungeonsUI, updateCurrentDungeonUI } from "../ui/ui.js";
 import { createInventory } from "../core/inventory.js"
-import { getLoot, getEquipmentLoot } from "../core/loot.js";
-import { spawnEnemy, spawnEnemyFromBiome } from "../core/enemy.js";
+import { getLoot } from "../core/loot.js";
+import { spawnEnemy } from "../core/enemy.js";
 import { createCombatSystem } from "../combat/combat.js";
 import { createCombatUI } from "../ui/ui-combat.js";
 import { createLevelSystem } from "../core/level-system.js";
 import { createSkillSystem } from "../core/skill-system.js";
 import { createQuestSystem } from "../core/quest-system.js";
 import { createEquipmentSystem } from "../core/equipment.js";
-import { getRandomEventFromBiome } from "../core/biomes.js";
-import { getBossByLevel, spawnBoss } from "../core/bosses.js";
+import { createRegionSystem } from "../core/region-system.js";
+import { createDungeonSystem } from "../core/dungeon-system.js";
+import { getRandomEnemyFromRegion, getRandomEventFromRegion } from "../core/regions.js";
+import { getBossForRegion, spawnBoss, getBossByName } from "../core/bosses.js";
+import { getRandomRegionalQuests } from "../core/quests.js";
 
 // === INITIALIZATION ===
 const GRID_WIDTH = 12;
@@ -25,22 +27,24 @@ const levelSystem = createLevelSystem();
 const skillSystem = createSkillSystem();
 const questSystem = createQuestSystem();
 const equipmentSystem = createEquipmentSystem();
+const regionSystem = createRegionSystem();
+const dungeonSystem = createDungeonSystem();
 
 let autoMoveEnabled = true;
 let autoMoveInterval = null;
 let isInCombat = false;
-let currentBiome = null;
-let stepCount = 0;
 let combatDamageTaken = 0;
+let currentView = "worldmap"; // "worldmap" | "region" | "dungeon"
+let tempCombatBuffs = { dmg: 0, def: 0 };
 
-// Temporary combat buffs (reset after combat)
-let tempCombatBuffs = {
-    dmg: 0,
-    def: 0
-};
+// Initialize regional quests
+function initializeRegionalQuests() {
+    const currentRegion = regionSystem.getCurrentRegion();
+    const quests = getRandomRegionalQuests(currentRegion.id, 3);
+    quests.forEach(quest => questSystem.addQuest(quest));
+}
 
-// Initialize quest system
-questSystem.initialize();
+initializeRegionalQuests();
 
 // Update player stats with equipment
 function updatePlayerWithEquipment() {
@@ -49,16 +53,133 @@ function updatePlayerWithEquipment() {
     updateUI(player);
 }
 
+// === 3-LEVEL NAVIGATION ===
+
+// LEVEL 1: World Map
+function showWorldMap() {
+    currentView = "worldmap";
+    stopAutoMove();
+    
+    document.getElementById("worldMapView").classList.remove("hidden");
+    document.getElementById("regionView").classList.add("hidden");
+    document.getElementById("dungeonView").classList.add("hidden");
+
+    // DEBUG
+    console.log("=== showWorldMap DEBUG ===");
+    console.log("Calling updateWorldMapUI...");
+    
+    updateWorldMapUI(regionSystem, dungeonSystem, levelSystem.level, selectRegion);
+
+     console.log("worldMapGrid innerHTML:", document.getElementById("worldMapGrid").innerHTML);
+    // ... rest of code
+    
+    document.getElementById("worldMapPlayerLevel").textContent = levelSystem.level;
+    document.getElementById("worldMapPlayerHP").textContent = `${player.hp} / ${player.maxHP}`;
+    document.getElementById("worldMapPlayerDMG").textContent = player.dmg;
+    
+    const worldMapQuests = document.getElementById("worldMapQuests");
+    const activeQuests = questSystem.getActiveQuests();
+    
+    if (activeQuests.length > 0) {
+        worldMapQuests.innerHTML = activeQuests.map(q => `
+            <p class="text-sm text-gray-300 mb-1">• ${q.title} (${q.progress}/${q.targetCount})</p>
+        `).join('');
+    } else {
+        worldMapQuests.innerHTML = '<p class="text-gray-500 text-xs">Nincs aktív quest</p>';
+    }
+}
+
+// LEVEL 2: Region View (Dungeon List)
+function showRegionView() {
+    currentView = "region";
+    stopAutoMove();
+    
+    document.getElementById("worldMapView").classList.add("hidden");
+    document.getElementById("regionView").classList.remove("hidden");
+    document.getElementById("dungeonView").classList.add("hidden");
+    
+    const currentRegion = regionSystem.getCurrentRegion();
+    const regionHeader = document.getElementById("regionViewHeader");
+    
+    regionHeader.innerHTML = `
+        <div class="text-center">
+            <h2 class="text-3xl font-bold mb-2" style="color: ${currentRegion.color}">
+                ${currentRegion.emoji} ${currentRegion.name}
+            </h2>
+            <p class="text-gray-400">${currentRegion.description}</p>
+        </div>
+    `;
+    
+    updateRegionDungeonsUI(regionSystem, dungeonSystem, selectDungeon);
+}
+
+// LEVEL 3: Dungeon View (Grid Game)
+function showDungeonView() {
+    currentView = "dungeon";
+    
+    document.getElementById("worldMapView").classList.add("hidden");
+    document.getElementById("regionView").classList.add("hidden");
+    document.getElementById("dungeonView").classList.remove("hidden");
+    
+    updateCurrentDungeonUI(dungeonSystem);
+    dungeon.draw(player);
+    
+    if (autoMoveEnabled) startAutoMove();
+}
+
+// Select Region (World Map → Region View)
+function selectRegion(regionId) {
+    const result = regionSystem.changeRegion(regionId, levelSystem.level, dungeonSystem);
+    
+    if (result.success) {
+        questSystem.clearActiveQuests();
+        const quests = getRandomRegionalQuests(regionId, 3);
+        quests.forEach(q => questSystem.addQuest(q));
+        
+        updateQuestUI(questSystem);
+        showRegionView();
+    } else {
+        alert(`Cannot enter region: ${result.reason}`);
+    }
+}
+
+// Select Dungeon (Region View → Dungeon View)
+function selectDungeon(dungeonId) {
+    const result = dungeonSystem.enterDungeon(dungeonId);
+    
+    if (result.success) {
+        player.x = 0;
+        player.y = 0;
+        player.hp = player.maxHP; // Full HP on dungeon enter
+        
+        updateUI(player);
+        showDungeonView();
+    } else {
+        alert(`Cannot enter dungeon: ${result.reason}`);
+    }
+}
+
+// Exit Dungeon → Region View
+function exitDungeon(reason = "exited") {
+    dungeonSystem.exitDungeon();
+    
+    if (reason === "death") {
+        setEventText("💀 You died! Returning to region...");
+    } else if (reason === "victory") {
+        setEventText("🎉 Dungeon completed!");
+    }
+    
+    showRegionView();
+}
+
 // === EQUIPMENT FUNCTIONS ===
 function equipItem(item) {
     const oldItem = equipmentSystem.equip(item);
     
     if (oldItem) {
-        // Put old item back to inventory
         inventory.addItem(oldItem.name, 1, "equipment", 0, oldItem);
     }
     
-    // Remove new item from inventory
     inventory.removeItem(item.name, 1);
     
     updatePlayerWithEquipment();
@@ -79,7 +200,6 @@ function unequipSlot(slot) {
     }
 }
 
-// Make unequip available globally for HTML onclick
 window.unequipSlot = unequipSlot;
 
 // === ITEM USE FUNCTION ===
@@ -96,48 +216,39 @@ function useItemInCombat(item) {
         player.dmg += item.amount;
         
         inventory.removeItem(item.name, 1);
-        combatUI.update(`Használtál egy ${item.name}-t! +${item.amount} DMG (harc végéig)`, combat.currentEnemy);
+        combatUI.update(`Használtál egy ${item.name}-t! +${item.amount} DMG`, combat.currentEnemy);
         combatUI.updateItems(inventory.getUsableItems(), useItemInCombat);
         updateUI(player);
         updateInventoryUI(inventory);
     }
 }
 
-// === RESET COMBAT BUFFS ===
 function resetCombatBuffs() {
     player.dmg -= tempCombatBuffs.dmg;
     player.def -= tempCombatBuffs.def;
-    
-    tempCombatBuffs = {
-        dmg: 0,
-        def: 0
-    };
-    
+    tempCombatBuffs = { dmg: 0, def: 0 };
     updateUI(player);
 }
 
-// === SKILL USE FUNCTION ===
+// === SKILL FUNCTIONS ===
 function useSkillInCombat(skillId) {
     combat.useSkill(skillId);
     combatUI.updateSkills(skillSystem, useSkillInCombat);
 }
 
-// === LEARN SKILL FUNCTION ===
 function learnSkill(skillId) {
     if (skillSystem.learnSkill(skillId, player, levelSystem)) {
         updatePlayerWithEquipment();
         updateLevelUI(levelSystem);
         updateSkillUI(skillSystem, learnSkill);
         setEventText(`Skill megtanulva: ${skillId}`);
-    } else {
-        setEventText(`Nem sikerült megtanulni a skillt!`);
     }
 }
 
-// === QUEST REWARD HANDLER ===
+// === QUEST REWARDS ===
 function handleQuestRewards(completedQuests) {
     completedQuests.forEach(({ quest, rewards }) => {
-        let message = `✅ Quest befejezve: ${quest.title}!`;
+        let message = `✅ Quest: ${quest.title}!`;
         
         if (rewards.xp) {
             const leveledUp = levelSystem.addXP(rewards.xp);
@@ -151,7 +262,7 @@ function handleQuestRewards(completedQuests) {
         }
         
         if (rewards.gold) {
-            message += `\n+${rewards.gold} Arany`;
+            message += `\n+${rewards.gold} Gold`;
             inventory.addItem("Arany", rewards.gold, "misc", 0);
         }
         
@@ -166,7 +277,7 @@ function handleQuestRewards(completedQuests) {
     });
 }
 
-// === COMBAT SYSTEM SETUP ===
+// === COMBAT SYSTEM ===
 const combatUI = createCombatUI(player);
 
 const combat = createCombatSystem(
@@ -178,6 +289,15 @@ const combat = createCombatSystem(
         isInCombat = true;
         combatDamageTaken = 0;
         stopAutoMove();
+        
+        // Apply dungeon difficulty multiplier
+        const currentDungeon = dungeonSystem.getCurrentDungeon();
+        if (currentDungeon) {
+            enemy.hp = Math.floor(enemy.hp * currentDungeon.difficulty);
+            enemy.maxHP = Math.floor(enemy.maxHP * currentDungeon.difficulty);
+            enemy.dmg = Math.floor(enemy.dmg * currentDungeon.difficulty);
+        }
+        
         combatUI.show(enemy);
         combatUI.updateItems(inventory.getUsableItems(), useItemInCombat);
         combatUI.updateSkills(skillSystem, useSkillInCombat);
@@ -185,29 +305,38 @@ const combat = createCombatSystem(
     (message, loot, leveledUp) => {
         isInCombat = false;
         
-        // Check survive quests
-        const surviveQuests = questSystem.checkSurvive(player.hp, player.maxHP, combatDamageTaken);
-        
-        // Check boss quest if enemy was boss
-        let bossQuests = [];
-        if (combat.currentEnemy && combat.currentEnemy.isBoss) {
-            bossQuests = questSystem.checkBoss();
-        }
-        
-        // Check kill quest
-        let killQuests = [];
+        // Track progress
         if (combat.currentEnemy) {
-            killQuests = questSystem.checkKill(combat.currentEnemy.name);
+            dungeonSystem.addEnemyKill();
+            regionSystem.addEnemyKill(combat.currentEnemy.name);
+            
+            if (combat.currentEnemy.isBoss) {
+                regionSystem.defeatBoss(combat.currentEnemy.name);
+                dungeonSystem.completeDungeon(true);
+                
+                const bossQuests = questSystem.checkBoss();
+                handleQuestRewards(bossQuests);
+                
+                setTimeout(() => {
+                    alert("🎉 BOSS DEFEATED! Dungeon Completed!");
+                    exitDungeon("victory");
+                }, 500);
+            }
+            
+            const killQuests = questSystem.checkKill(combat.currentEnemy.name);
+            handleQuestRewards(killQuests);
         }
+        
+        const surviveQuests = questSystem.checkSurvive(player.hp, player.maxHP, combatDamageTaken);
+        handleQuestRewards(surviveQuests);
         
         resetCombatBuffs();
-        
         combatUI.hide(message, loot);
         
         if (loot) {
             if (loot.isEquipment) {
                 inventory.addItem(loot.name, 1, "equipment", 0, loot);
-                alert(`⚔️ Equipment szerzés: ${loot.name} [${loot.rarity}]`);
+                alert(`⚔️ Equipment: ${loot.name} [${loot.rarity}]`);
             } else {
                 inventory.addItem(loot.name, loot.quantity, loot.type, loot.amount);
             }
@@ -217,11 +346,9 @@ const combat = createCombatSystem(
         updateLevelUI(levelSystem);
         updateSkillUI(skillSystem, learnSkill);
         updateQuestUI(questSystem);
+        updateCurrentDungeonUI(dungeonSystem);
         
-        // Handle quest rewards
-        handleQuestRewards([...surviveQuests, ...bossQuests, ...killQuests]);
-        
-        if (autoMoveEnabled) startAutoMove();
+        if (autoMoveEnabled && currentView === "dungeon") startAutoMove();
     },
     (message, enemy) => {
         combatUI.update(message, enemy);
@@ -229,19 +356,28 @@ const combat = createCombatSystem(
     }
 );
 
-// Track damage taken for quest
-const originalPlayerHP = player.hp;
-setInterval(() => {
-    if (isInCombat && player.hp < originalPlayerHP) {
-        combatDamageTaken += (originalPlayerHP - player.hp);
+// Override player death in combat
+const originalHidePopup = combatUI.hide;
+combatUI.hide = function(message, loot) {
+    if (player.hp <= 0) {
+        player.hp = player.maxHP;
+        updateUI(player);
+        dungeonSystem.completeDungeon(false);
+        
+        originalHidePopup.call(this, "💀 You died!", null);
+        
+        setTimeout(() => {
+            exitDungeon("death");
+        }, 100);
+    } else {
+        originalHidePopup.call(this, message, loot);
     }
-}, 100);
+};
 
-// Add starting items
+// Starting items
 inventory.addItem("Gyógyital", 2, "heal", 10);
 
-// === DRAW INITIAL STATE ===
-currentBiome = dungeon.getCurrentBiome(player.x, player.y);
+// === INITIAL DRAW ===
 dungeon.draw(player);
 updateUI(player);
 updateInventoryUI(inventory);
@@ -249,57 +385,64 @@ updateLevelUI(levelSystem);
 updateSkillUI(skillSystem, learnSkill);
 updateQuestUI(questSystem);
 updateEquipmentUI(equipmentSystem);
-updateBiomeUI(currentBiome);
 
-// === HANDLE STEP ===
+// Start on World Map
+showWorldMap();
+
+// DEBUG
+console.log("=== DEBUG ===");
+console.log("worldMapView elem:", document.getElementById("worldMapView"));
+console.log("worldMapGrid elem:", document.getElementById("worldMapGrid"));
+console.log("currentView:", currentView);
+
+// === GAME STEP (Dungeon only) ===
 function handleStep() {
-    stepCount++;
-    
-    // Update current biome
-    currentBiome = dungeon.getCurrentBiome(player.x, player.y);
-    updateBiomeUI(currentBiome);
+    const currentRegion = regionSystem.getCurrentRegion();
+    const currentDungeon = dungeonSystem.getCurrentDungeon();
     
     dungeon.draw(player);
     updateUI(player);
+    updateCurrentDungeonUI(dungeonSystem);
     
-    // Check explore quest
     const exploreQuests = questSystem.checkExplore();
     handleQuestRewards(exploreQuests);
 
-    // Boss chance every 50 steps or at level milestones
-    if (stepCount % 50 === 0 || (levelSystem.level % 5 === 0 && Math.random() < 0.1)) {
-        const bossData = getBossByLevel(levelSystem.level);
-        const boss = spawnBoss(bossData);
-        combat.startCombat(boss);
-        setEventText(`🐉 BOSS MEGJELENT: ${boss.name}!`);
-        return;
+    // Boss spawn in dungeon
+    if (currentDungeon && currentDungeon.hasBoss) {
+        const progress = dungeonSystem.getCurrentProgress();
+        
+        if (progress.enemiesKilled >= currentDungeon.enemyCount && Math.random() < 0.1) {
+            const bossData = getBossByName(currentDungeon.bossName);
+            const boss = spawnBoss(bossData);
+            combat.startCombat(boss);
+            setEventText(`👑 BOSS: ${boss.name}!`);
+            return;
+        }
     }
 
-    // Combat spawn chance (biome affects spawn rate)
-    const spawnChance = currentBiome ? 0.25 : 0.2;
-    if (!isInCombat && Math.random() < spawnChance) {
-        const enemy = currentBiome ? spawnEnemyFromBiome(currentBiome) : spawnEnemy();
+    // Normal enemy spawn
+    if (!isInCombat && Math.random() < 0.25) {
+        const enemyName = getRandomEnemyFromRegion(currentRegion);
+        const enemy = spawnEnemy(enemyName);
         combat.startCombat(enemy);
         return;
     }
 
-    // Biome-specific event or random event
-    const eventText = currentBiome ? getRandomEventFromBiome(currentBiome) : randomEvent();
+    const eventText = getRandomEventFromRegion(currentRegion);
     setEventText(eventText);
 
-    // Loot chance (biome affects loot bonus)
-    const lootChance = currentBiome ? 0.25 * currentBiome.lootBonus : 0.25;
+    // Loot
+    const lootChance = 0.25 * (currentRegion.lootBonus || 1.0);
     if (!isInCombat && Math.random() < lootChance) {
         const loot = getLoot(levelSystem.level);
         if (loot) {
             if (loot.isEquipment) {
                 inventory.addItem(loot.name, 1, "equipment", 0, loot);
-                setEventText(`⚔️ Találtál equipment-et: ${loot.name} [${loot.rarity}]!`);
+                setEventText(`⚔️ ${loot.name} [${loot.rarity}]!`);
             } else {
                 inventory.addItem(loot.name, loot.quantity, loot.type, loot.amount);
-                setEventText(`Találtál: ${loot.quantity}× ${loot.name}!`);
+                setEventText(`${loot.quantity}× ${loot.name}!`);
                 
-                // Check collect quest
                 const collectQuests = questSystem.checkCollect(loot.name, loot.quantity);
                 handleQuestRewards(collectQuests);
             }
@@ -310,7 +453,7 @@ function handleStep() {
 
 // === AUTO MOVE ===
 function autoStep() {
-    if (isInCombat) return;
+    if (isInCombat || currentView !== "dungeon") return;
     player.moveRandom(dungeon.width, dungeon.height);
     handleStep();
 }
@@ -329,22 +472,20 @@ function stopAutoMove() {
 
 // === MANUAL MOVE ===
 function movePlayer(dx, dy) {
-    if (isInCombat) return;
+    if (isInCombat || currentView !== "dungeon") return;
 
     const moved = player.move(dx, dy, dungeon.width, dungeon.height);
-    if (moved) {
-        handleStep();
-    }
+    if (moved) handleStep();
 }
 
-// === EXTRA ACTIONS ===
+// === ACTIONS ===
 function toggleAuto() {
     autoMoveEnabled = !autoMoveEnabled;
     const text = document.getElementById("autoText");
 
     if (autoMoveEnabled) {
         text.textContent = "⏸️ Auto: BE";
-        startAutoMove();
+        if (currentView === "dungeon") startAutoMove();
     } else {
         text.textContent = "▶️ Auto: KI";
         stopAutoMove();
@@ -352,16 +493,16 @@ function toggleAuto() {
 }
 
 function searchForLoot() {
-    if (isInCombat) return;
+    if (isInCombat || currentView !== "dungeon") return;
 
     const loot = getLoot(levelSystem.level);
     if (loot) {
         if (loot.isEquipment) {
             inventory.addItem(loot.name, 1, "equipment", 0, loot);
-            setEventText(`⚔️ Keresés sikeres! Találtál: ${loot.name} [${loot.rarity}]!`);
+            setEventText(`⚔️ ${loot.name}!`);
         } else {
             inventory.addItem(loot.name, loot.quantity, loot.type, loot.amount);
-            setEventText(`Keresés sikeres! Találtál: ${loot.quantity}× ${loot.name}!`);
+            setEventText(`${loot.quantity}× ${loot.name}!`);
             
             const collectQuests = questSystem.checkCollect(loot.name, loot.quantity);
             handleQuestRewards(collectQuests);
@@ -373,28 +514,24 @@ function searchForLoot() {
 }
 
 function teleportRandom() {
-    if (isInCombat) return;
+    if (isInCombat || currentView !== "dungeon") return;
 
     player.teleport(dungeon.width, dungeon.height);
-    currentBiome = dungeon.getCurrentBiome(player.x, player.y);
     dungeon.draw(player);
     updateUI(player);
-    updateBiomeUI(currentBiome);
-    setEventText("⚡ Teleportáltál egy új helyre!");
+    setEventText("⚡ Teleport!");
 }
 
 function resetGame() {
-    if (confirm("Biztosan újrakezded a játékot?")) {
+    if (confirm("Reset game?")) {
         player.reset(0, 0);
         inventory.clear();
         levelSystem.reset();
         equipmentSystem.clear();
+        regionSystem.reset();
+        dungeonSystem.reset();
         resetCombatBuffs();
-        stepCount = 0;
 
-        dungeon.regenerateBiomes();
-        currentBiome = dungeon.getCurrentBiome(player.x, player.y);
-        
         updatePlayerWithEquipment();
         dungeon.draw(player);
         updateInventoryUI(inventory);
@@ -402,21 +539,19 @@ function resetGame() {
         updateSkillUI(skillSystem, learnSkill);
         updateQuestUI(questSystem);
         updateEquipmentUI(equipmentSystem);
-        updateBiomeUI(currentBiome);
-        setEventText("Új kaland kezdődik!");
+        
+        showWorldMap();
     }
 }
 
-// === STAT SPENDING ===
 function spendStat(stat) {
     if (levelSystem.spendStatPoint(stat, player)) {
         updatePlayerWithEquipment();
         updateLevelUI(levelSystem);
-        setEventText(`Stat növelve: ${stat.toUpperCase()}`);
     }
 }
 
-// === INVENTORY CLICK (EQUIP) ===
+// === INVENTORY CLICK ===
 document.getElementById("inventoryPanel").addEventListener("click", (e) => {
     if (e.target.tagName === "P" && e.target.textContent.includes("[")) {
         const items = inventory.getItems();
@@ -426,7 +561,7 @@ document.getElementById("inventoryPanel").addEventListener("click", (e) => {
             item.isEquipment && clickedText.includes(item.name)
         );
         
-        if (equipmentItem && confirm(`Felszereled: ${equipmentItem.name}?`)) {
+        if (equipmentItem && confirm(`Equip: ${equipmentItem.name}?`)) {
             equipItem(equipmentItem);
         }
     }
@@ -444,13 +579,11 @@ document.getElementById("btnSearch").addEventListener("click", searchForLoot);
 document.getElementById("btnTeleport").addEventListener("click", teleportRandom);
 document.getElementById("btnReset").addEventListener("click", resetGame);
 
-// === STAT BUTTONS ===
 document.getElementById("btnStatHP").addEventListener("click", () => spendStat("hp"));
 document.getElementById("btnStatDMG").addEventListener("click", () => spendStat("dmg"));
 document.getElementById("btnStatDEF").addEventListener("click", () => spendStat("def"));
 document.getElementById("btnStatLuck").addEventListener("click", () => spendStat("luck"));
 
-// === COMBAT BUTTONS ===
 document.getElementById("btnCombatAttack").addEventListener("click", () => {
     if (isInCombat) combat.attack();
 });
@@ -463,19 +596,25 @@ document.getElementById("btnCombatFlee").addEventListener("click", () => {
     if (isInCombat) combat.flee();
 });
 
+// === NAVIGATION BUTTONS ===
+document.addEventListener("click", (e) => {
+    if (e.target.id === "btnBackToWorldMap") showWorldMap();
+    if (e.target.id === "btnBackToRegion") exitDungeon();
+});
+
 // === KEYBOARD ===
 document.addEventListener("keydown", (e) => {
-    if (isInCombat) return;
+    if (isInCombat || currentView !== "dungeon") return;
 
-    if (e.key === "ArrowUp" || e.key === "w" || e.key === "W") movePlayer(0, -1);
-    else if (e.key === "ArrowDown" || e.key === "s" || e.key === "S") movePlayer(0, 1);
-    else if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") movePlayer(-1, 0);
-    else if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") movePlayer(1, 0);
+    if (e.key === "ArrowUp" || e.key === "w") movePlayer(0, -1);
+    else if (e.key === "ArrowDown" || e.key === "s") movePlayer(0, 1);
+    else if (e.key === "ArrowLeft" || e.key === "a") movePlayer(-1, 0);
+    else if (e.key === "ArrowRight" || e.key === "d") movePlayer(1, 0);
     else if (e.key === " ") {
         e.preventDefault();
         searchForLoot();
+    } else if (e.key === "m" || e.key === "M") {
+        if (currentView === "dungeon") exitDungeon();
+        else if (currentView === "region") showWorldMap();
     }
 });
-
-// === START AUTO ===
-startAutoMove();

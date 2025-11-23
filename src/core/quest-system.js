@@ -1,17 +1,7 @@
-import { questDefinitions, getRandomQuests } from "./quests.js";
-
 export function createQuestSystem() {
     let activeQuests = [];
     let completedQuests = new Set();
     let questProgress = new Map(); // questId -> current progress
-
-    // Initialize with 3 random quests
-    function initialize() {
-        const startQuests = getRandomQuests(3);
-        startQuests.forEach(quest => {
-            addQuest(quest);
-        });
-    }
 
     function addQuest(quest) {
         if (activeQuests.length >= 5) return false; // Max 5 quests
@@ -94,9 +84,11 @@ export function createQuestSystem() {
             if (quest.type === "survive") {
                 let shouldProgress = false;
 
-                if (quest.id === "no_damage" && damageTaken === 0) {
+                if (quest.id.includes("no_damage") && damageTaken === 0) {
                     shouldProgress = true;
-                } else if (quest.id === "low_hp_victory" && playerHp <= 10) {
+                } else if (quest.id.includes("low_hp") && playerHp <= 10) {
+                    shouldProgress = true;
+                } else if (damageTaken === 0 || playerHp <= 10) {
                     shouldProgress = true;
                 }
 
@@ -128,18 +120,21 @@ export function createQuestSystem() {
     }
 
     function getAvailableQuests() {
-        return questDefinitions.filter(q => 
-            !activeQuests.find(aq => aq.id === q.id) &&
-            !completedQuests.has(q.id)
-        );
+        // Return empty array - quests are managed by region system now
+        return [];
     }
 
     function getQuestProgress(questId) {
         return questProgress.get(questId) || 0;
     }
+    
+    // NEW: Clear all active quests (for region change)
+    function clearActiveQuests() {
+        activeQuests = [];
+        questProgress.clear();
+    }
 
     return {
-        initialize,
         addQuest,
         checkKill,
         checkCollect,
@@ -148,6 +143,7 @@ export function createQuestSystem() {
         checkBoss,
         getActiveQuests,
         getAvailableQuests,
-        getQuestProgress
+        getQuestProgress,
+        clearActiveQuests // NEW
     };
 }

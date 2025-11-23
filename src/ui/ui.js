@@ -217,19 +217,198 @@ export function updateEquipmentUI(equipmentSystem, onEquip, onUnequip) {
     equipmentPanel.innerHTML = html;
 }
 
-// Biome info UI
-export function updateBiomeUI(biome) {
-    const biomePanel = document.getElementById("biomeInfo");
-    if (!biomePanel) return;
+// NEW: World Map UI
+export function updateWorldMapUI(regionSystem, dungeonSystem, playerLevel, onSelectRegion) {
+    const worldMapGrid = document.getElementById("worldMapGrid");
+    if (!worldMapGrid) return;
 
-    if (!biome) {
-        biomePanel.innerHTML = '<p class="text-gray-500 text-xs">Ismeretlen terület</p>';
+    const allRegions = regionSystem.getAllRegionsStatus(playerLevel, dungeonSystem);
+    
+    worldMapGrid.innerHTML = allRegions.map(region => {
+        const lockIcon = region.isLocked ? '🔒' : '';
+        const currentIcon = region.isCurrent ? '📍' : '';
+        const completedIcon = region.completion >= 100 ? '✅' : '';
+        
+        let statusClass = 'bg-slate-700';
+        if (region.isCurrent) statusClass = 'bg-blue-900 border-2 border-blue-400';
+        else if (region.completion >= 100) statusClass = 'bg-green-900';
+        else if (region.isLocked) statusClass = 'bg-slate-800 opacity-50';
+        
+        return `
+            <div class="region-card ${statusClass} p-4 rounded-lg ${region.isLocked ? 'cursor-not-allowed' : 'cursor-pointer hover:scale-105'} transition-all"
+                 data-region-id="${region.id}"
+                 ${region.isLocked ? 'title="Locked"' : ''}>
+                <div class="text-2xl mb-2">${region.emoji} ${lockIcon}${currentIcon}${completedIcon}</div>
+                <h3 class="text-sm font-bold text-white mb-1">${region.name}</h3>
+                <p class="text-xs text-gray-400 mb-2">${region.description}</p>
+                
+                ${!region.isLocked ? `
+                    <div class="mb-2">
+                        <div class="flex justify-between text-xs text-gray-300 mb-1">
+                            <span>Progress</span>
+                            <span>${region.completion}%</span>
+                        </div>
+                        <div class="w-full bg-slate-600 h-2 rounded">
+                            <div class="bg-yellow-500 h-2 rounded transition-all" style="width: ${region.completion}%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-xs text-gray-400">
+                        <p>Enemies: ${region.enemyKills}/${region.enemyRequirement}</p>
+                        <p>Boss: ${region.bossDefeated ? '✅' : '❌'}</p>
+                    </div>
+                ` : `
+                    <p class="text-xs text-red-400">Level ${region.level} required</p>
+                `}
+            </div>
+        `;
+    }).join('');
+
+    // Add click listeners
+    worldMapGrid.querySelectorAll('.region-card').forEach(card => {
+        const regionId = card.getAttribute('data-region-id');
+        const region = allRegions.find(r => r.id === regionId);
+        
+        if (!region.isLocked) {
+            card.addEventListener('click', () => onSelectRegion(regionId));
+        }
+    });
+}
+
+// NEW: Current Region Info UI
+export function updateCurrentRegionUI(regionSystem, dungeonSystem) {
+    const regionInfoEl = document.getElementById("currentRegionInfo");
+    if (!regionInfoEl) return;
+
+    const region = regionSystem.getCurrentRegion();
+    const progress = regionSystem.getCurrentProgress(dungeonSystem);
+    
+    regionInfoEl.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <h3 class="text-lg font-bold" style="color: ${region.color}">
+                    ${region.emoji} ${region.name}
+                </h3>
+                <p class="text-xs text-gray-400">${region.description}</p>
+            </div>
+            <button id="btnBackToMap" class="action-btn text-sm">
+                🗺️ World Map
+            </button>
+        </div>
+        
+        <div class="mt-3">
+            <div class="flex justify-between text-xs text-gray-300 mb-1">
+                <span>Region Progress</span>
+                <span>${progress.completion}%</span>
+            </div>
+            <div class="w-full bg-slate-600 h-3 rounded mb-2">
+                <div class="bg-yellow-500 h-3 rounded transition-all" style="width: ${progress.completion}%"></div>
+            </div>
+            
+            <div class="flex justify-between text-xs text-gray-400">
+                <span>Enemies: ${progress.enemyKills}/${progress.enemyRequired}</span>
+                <span>Boss: ${progress.bossDefeated ? '✅ Defeated' : '❌ Not defeated'}</span>
+            </div>
+        </div>
+    `;
+}
+
+// NEW: Region Dungeon List UI
+export function updateRegionDungeonsUI(regionSystem, dungeonSystem, onSelectDungeon) {
+    const dungeonListEl = document.getElementById("regionDungeonList");
+    if (!dungeonListEl) return;
+
+    const currentRegion = regionSystem.getCurrentRegion();
+    const dungeons = dungeonSystem.getDungeonsStatus(currentRegion.id);
+    
+    dungeonListEl.innerHTML = dungeons.map((dungeon, index) => {
+        const statusIcon = dungeon.completed ? '✅' : (dungeon.isCurrent ? '📍' : '');
+        const bossIcon = dungeon.hasBoss ? '👑' : '';
+        
+        let difficultyStars = '';
+        for (let i = 0; i < Math.ceil(dungeon.difficulty); i++) {
+            difficultyStars += '⭐';
+        }
+        
+        return `
+            <div class="dungeon-card bg-slate-700 p-4 rounded-lg cursor-pointer hover:bg-slate-600 transition-all ${dungeon.completed ? 'opacity-75' : ''}"
+                 data-dungeon-id="${dungeon.id}">
+                <div class="flex justify-between items-start mb-2">
+                    <div class="flex-1">
+                        <h4 class="text-md font-bold text-white mb-1">
+                            ${dungeon.name} ${statusIcon} ${bossIcon}
+                        </h4>
+                        <p class="text-xs text-gray-400">${dungeon.description}</p>
+                    </div>
+                    <div class="text-right ml-2">
+                        <p class="text-xs text-yellow-400">${difficultyStars}</p>
+                        <p class="text-xs text-gray-500">Diff: ${dungeon.difficulty}x</p>
+                    </div>
+                </div>
+                
+                <div class="mt-2 text-xs text-gray-400">
+                    <div class="flex justify-between">
+                        <span>Enemies: ${dungeon.enemyCount}</span>
+                        <span>Attempts: ${dungeon.attempts}</span>
+                    </div>
+                    ${dungeon.hasBoss ? `<p class="text-red-400 mt-1">⚔️ Boss: ${dungeon.bossName}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add click listeners
+    dungeonListEl.querySelectorAll('.dungeon-card').forEach(card => {
+        const dungeonId = card.getAttribute('data-dungeon-id');
+        card.addEventListener('click', () => onSelectDungeon(dungeonId));
+    });
+}
+
+// NEW: Current Dungeon Info UI
+export function updateCurrentDungeonUI(dungeonSystem) {
+    const dungeonInfoEl = document.getElementById("currentDungeonInfo");
+    if (!dungeonInfoEl) return;
+
+    const dungeon = dungeonSystem.getCurrentDungeon();
+    const progress = dungeonSystem.getCurrentProgress();
+    
+    if (!dungeon || !progress) {
+        dungeonInfoEl.innerHTML = '<p class="text-gray-500">No dungeon active</p>';
         return;
     }
-
-    biomePanel.innerHTML = `
-        <p class="text-sm font-bold" style="color: ${biome.color}">
-            ${biome.emoji} ${biome.name}
-        </p>
+    
+    let difficultyStars = '';
+    for (let i = 0; i < Math.ceil(dungeon.difficulty); i++) {
+        difficultyStars += '⭐';
+    }
+    
+    dungeonInfoEl.innerHTML = `
+        <div class="flex items-center justify-between mb-2">
+            <div>
+                <h3 class="text-lg font-bold text-purple-400">
+                    ${dungeon.name}
+                </h3>
+                <p class="text-xs text-gray-400">${dungeon.description}</p>
+                <p class="text-xs text-yellow-400 mt-1">${difficultyStars} Difficulty: ${dungeon.difficulty}x</p>
+            </div>
+            <button id="btnBackToRegion" class="action-btn text-sm bg-red-700 hover:bg-red-800">
+                🚪 Exit Dungeon
+            </button>
+        </div>
+        
+        <div class="mt-3">
+            <div class="flex justify-between text-xs text-gray-300 mb-1">
+                <span>Dungeon Progress</span>
+                <span>${Math.floor(progress.completion)}%</span>
+            </div>
+            <div class="w-full bg-slate-600 h-3 rounded mb-2">
+                <div class="bg-purple-500 h-3 rounded transition-all" style="width: ${progress.completion}%"></div>
+            </div>
+            
+            <div class="text-xs text-gray-400">
+                <span>Enemies Killed: ${progress.enemiesKilled}/${progress.enemiesRequired}</span>
+                ${dungeon.hasBoss ? `<p class="text-red-400 mt-1">⚔️ Boss: ${dungeon.bossName}</p>` : ''}
+            </div>
+        </div>
     `;
 }
